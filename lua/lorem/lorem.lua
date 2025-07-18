@@ -1,30 +1,36 @@
 local M = {}
 
-M.lorem_text =
-"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+local function load_word_bank(cache_root, subdir, filename, safe)
+    local path = vim.fs.joinpath(cache_root, subdir)
+    local file_path = vim.fs.joinpath(path, filename)
 
-function M.generate_lorem(words_count)
-    -- Split the lorem text into words
-    local words = {}
-    for word in M.lorem_text:gmatch("%S+") do
-        table.insert(words, word)
+    if safe or false then
+        return {
+            "lorem", "ipsum", "dolor", "sit", "amet",
+            "consectetur", "adipiscing", "elit",
+            "eiusmod", "tempor", "incididunt", "ut", "labore",
+            "et", "dolore", "magna", "aliqua"
+        }
     end
-
-    -- Limit the words to the requested count
-    local result = {}
-    for i = 1, math.min(words_count, #words) do
-        table.insert(result, words[i])
+    if vim.fn.isdirectory(path) == 1 and vim.fn.filereadable(file_path) == 1 then
+        local lines = {}
+        for line in io.lines(file_path) do
+            table.insert(lines, line)
+        end
+        return lines
     end
-
-    return table.concat(result, " ")
 end
 
-function M.word_count(str)
-    local count = 0
-    for _ in str:gmatch("%S+") do
-        count = count + 1
+
+function M.generate_lorem(count, safe)
+    local word_bank = load_word_bank(vim.fs.joinpath(vim.fn.stdpath("cache")), "dictionary", "words.txt", safe)
+    local result = {}
+    for i = 1, count do
+        local index = math.random(#word_bank)
+        table.insert(result, word_bank[index])
     end
-    return count
+    result[1] = result[1]:gsub("^%l", string.upper)
+    return table.concat(result, " ") .. "."
 end
 
 return M
